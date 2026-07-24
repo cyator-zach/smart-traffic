@@ -1,0 +1,405 @@
+:root {
+  /* ====================================================
+      LIGHT MODE (TERANG & KONTRAS)
+  ==================================================== */
+  --bg-primary:    #f4f7fe; /* Biru sangat muda/putih, bersih untuk background */
+  --bg-card:       #ffffff; /* Putih bersih untuk card utama */
+  --bg-card2:      #e0e8f9; /* Biru muda lembut untuk card sekunder / hover state */
+  --border-subtle: rgba(0, 0, 0, 0.06); /* Border tipis gelap agar kelihatan */
+  
+  /* Perubahan krusial pada teks agar terbaca jelas */
+  --text-primary:  #1e293b; /* Biru gelap/slate tajam untuk teks utama */
+  --text-muted:    #64748b; /* Abu-abu kebiruan untuk teks pendukung */
+  --text-dim:      #94a3b8; /* Abu-abu terang untuk elemen dekoratif/disabled */
+
+  /* Warna aksen (sedikit disesuaikan agar lebih ramah di layar terang) */
+  --green:   #00c853;
+  --yellow:  #ffd600;
+  --red:     #d50000;
+  --blue:    #2962ff;
+  --cyan:    #00b8d4;
+  --purple:  #aa00ff;
+  --orange:  #ff6d00;
+
+  /* Efek glow yang lebih soft untuk light mode */
+  --green-glow:  0 4px 14px rgba(0, 200, 83, 0.3);
+  --yellow-glow: 0 4px 14px rgba(255, 214, 0, 0.3);
+  --red-glow:    0 4px 14px rgba(213, 0, 0, 0.3);
+
+  --radius-lg: 1.15rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.45rem;
+  --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ====================================================
+   BASE
+==================================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  background-image:
+    linear-gradient(rgba(41,121,255,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(41,121,255,.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+}
+
+/* ====================================================
+   NAVBAR
+==================================================== */
+.nav-bar {
+  background: rgba(11,15,26,0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.75rem 2rem;
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: 1rem;
+}
+.nav-brand {
+  font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em;
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.nav-badge {
+  font-size: 0.7rem; font-weight: 600; letter-spacing: .06em;
+  background: var(--blue); color: #fff;
+  padding: 0.2em 0.7em; border-radius: 999px;
+  text-transform: uppercase;
+}
+.nav-time {
+  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem; color: var(--text-muted);
+}
+#live-dot {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--green);
+  box-shadow: var(--green-glow);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+  margin-right: 6px;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .5; transform: scale(0.75); }
+}
+
+/* ====================================================
+   MAIN LAYOUT
+==================================================== */
+.page-wrap {
+  max-width: 1560px; margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+/* ====================================================
+   SECTION HEADER
+==================================================== */
+.section-title {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+/* ====================================================
+   LANE CARD
+==================================================== */
+.lane-col { display: flex; flex-direction: column; }
+
+.lane-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  flex: 1;
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+.lane-card.active-green {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green), 0 8px 40px rgba(0,230,118,.18);
+}
+.lane-card.active-yellow {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 1px var(--yellow), 0 8px 40px rgba(255,234,0,.18);
+}
+.lane-card.active-red {
+  border-color: var(--border-subtle);
+}
+
+/* Card Header */
+.lane-header {
+  padding: 0.85rem 1.1rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  background: var(--bg-card2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.lane-icon {
+  width: 38px; height: 38px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.lane-icon.a { background: rgba(41,121,255,.18); color: var(--blue); }
+.lane-icon.b { background: rgba(0,229,255,.18);  color: var(--cyan); }
+.lane-icon.c { background: rgba(213,0,249,.18);  color: var(--purple); }
+
+.lane-title {
+  font-size: 1rem; font-weight: 700; letter-spacing: -.01em;
+}
+.density-badge {
+  margin-left: auto; font-size: 0.67rem; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase;
+  padding: 0.25em 0.8em; border-radius: 999px;
+}
+.density-badge.SEPI   { background: rgba(0,230,118,.15); color: var(--green); }
+.density-badge.NORMAL { background: rgba(255,234,0,.15);  color: var(--yellow); }
+.density-badge.PADAT  { background: rgba(255,23,68,.15);  color: var(--red); }
+
+/* Card Body */
+.lane-body { padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 1rem; }
+
+/* ====================================================
+   TRAFFIC LIGHT WIDGET
+==================================================== */
+.tl-widget {
+  display: flex; align-items: center; gap: 1rem;
+  background: rgba(0,0,0,.25); border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-subtle);
+}
+.tl-lights {
+  display: flex; flex-direction: column; gap: 7px;
+  background: #1a1a2e; padding: 8px 10px; border-radius: 8px;
+  border: 2px solid #2a2a4a;
+}
+.tl-bulb {
+  width: 22px; height: 22px; border-radius: 50%;
+  transition: box-shadow var(--transition), background var(--transition);
+}
+.tl-bulb.red-bulb    { background: #3a1520; }
+.tl-bulb.yellow-bulb { background: #2d2810; }
+.tl-bulb.green-bulb  { background: #0a2010; }
+
+.tl-bulb.red-on    { background: var(--red);    box-shadow: var(--red-glow); }
+.tl-bulb.yellow-on { background: var(--yellow); box-shadow: var(--yellow-glow); }
+.tl-bulb.green-on  { background: var(--green);  box-shadow: var(--green-glow); }
+
+.tl-info { flex: 1; }
+.tl-status-label {
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-muted); margin-bottom: 2px;
+}
+.tl-status-text {
+  font-size: 1.15rem; font-weight: 800; letter-spacing: -.01em;
+}
+.tl-status-text.GREEN  { color: var(--green); }
+.tl-status-text.YELLOW { color: var(--yellow); }
+.tl-status-text.RED    { color: var(--red); }
+
+.countdown-wrap { text-align: right; }
+.countdown-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2rem; font-weight: 700; line-height: 1;
+}
+.countdown-val.GREEN  { color: var(--green); }
+.countdown-val.YELLOW { color: var(--yellow); }
+.countdown-val.RED    { color: var(--red); }
+.countdown-lbl {
+  font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-muted);
+}
+
+/* ====================================================
+   VEHICLE STATS GRID
+==================================================== */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem;
+}
+.stat-item {
+  background: var(--bg-card2); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm); padding: 0.55rem 0.75rem;
+  display: flex; align-items: center; gap: 0.55rem;
+  transition: border-color var(--transition);
+}
+.stat-item:hover { border-color: rgba(255,255,255,0.15); }
+.stat-icon { font-size: 1.1rem; }
+.stat-label {
+  font-size: 0.68rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.stat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem; font-weight: 700; color: var(--text-primary);
+}
+
+.total-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg-card2); border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-subtle);
+}
+.total-label {
+  font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--text-muted);
+}
+.total-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.4rem; font-weight: 800; color: var(--cyan);
+}
+.green-dur-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem; font-weight: 600; color: var(--green);
+}
+
+/* ====================================================
+   IMAGE DISPLAY
+==================================================== */
+.img-label {
+  font-size: 0.67rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .09em; color: var(--text-muted); margin-bottom: 0.4rem;
+}
+.img-box {
+  width: 100%; aspect-ratio: 16/9; object-fit: cover;
+  border-radius: var(--radius-sm); background: #0a0d14;
+  border: 1px solid var(--border-subtle);
+  display: block;
+}
+.img-placeholder {
+  width: 100%; aspect-ratio: 16/9;
+  border-radius: var(--radius-sm); background: #0a0d14;
+  border: 1px dashed var(--border-subtle);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.4rem; color: var(--text-dim);
+  font-size: 0.78rem;
+}
+.img-placeholder i { font-size: 2rem; }
+
+/* ====================================================
+   UPLOAD FORM
+==================================================== */
+.upload-form { display: flex; gap: 0.5rem; }
+.upload-input {
+  flex: 1; font-size: 0.78rem;
+  background: var(--bg-card2); color: var(--text-primary);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+  padding: 0.45rem 0.7rem; cursor: pointer;
+  transition: border-color var(--transition);
+}
+.upload-input:hover,
+.upload-input:focus { border-color: rgba(255,255,255,.2); outline: none; }
+.upload-input::file-selector-button {
+  background: transparent; border: none; color: var(--text-muted);
+  font-size: 0.75rem; cursor: pointer; margin-right: 0.5rem;
+}
+.btn-upload {
+  font-size: 0.78rem; font-weight: 600; letter-spacing: .04em;
+  padding: 0.45rem 1rem; border-radius: var(--radius-sm);
+  border: none; cursor: pointer; white-space: nowrap;
+  transition: opacity var(--transition), transform 0.15s;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.btn-upload:active { transform: scale(0.97); }
+.btn-upload.a { background: linear-gradient(135deg, #1565c0, var(--blue)); color: #fff; }
+.btn-upload.b { background: linear-gradient(135deg, #006064, var(--cyan)); color: #000; }
+.btn-upload.c { background: linear-gradient(135deg, #6a0080, var(--purple)); color: #fff; }
+.btn-upload:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.upload-msg {
+  margin-top: 0.4rem; font-size: 0.73rem; padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm); display: none;
+}
+.upload-msg.success { background: rgba(0,230,118,.12); color: var(--green); display: block; }
+.upload-msg.error   { background: rgba(255,23,68,.12);  color: var(--red);   display: block; }
+
+/* Upload progress bar */
+.upload-progress {
+  height: 3px; background: var(--border-subtle); border-radius: 999px;
+  margin-top: 0.4rem; overflow: hidden; display: none;
+}
+.upload-progress-bar {
+  height: 100%; width: 0%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  transition: width 0.3s;
+  animation: progress-pulse 1.5s ease-in-out infinite;
+}
+@keyframes progress-pulse {
+  0%,100% { opacity:1; } 50% { opacity:.6; }
+}
+
+/* ====================================================
+   TOP SUMMARY BAR
+==================================================== */
+.summary-bar {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.summary-item {
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); padding: 0.85rem 1.1rem;
+  display: flex; align-items: center; gap: 0.8rem;
+}
+.summary-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+}
+.summary-icon.total { background: rgba(0,229,255,.12); color: var(--cyan); }
+.summary-icon.green { background: rgba(0,230,118,.12); color: var(--green); }
+.summary-icon.active{ background: rgba(41,121,255,.12); color: var(--blue); }
+.summary-meta { flex: 1; }
+.summary-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem; font-weight: 800; line-height: 1;
+}
+.summary-lbl {
+  font-size: 0.68rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .09em; margin-top: 2px;
+}
+
+/* ====================================================
+   SEPARATOR
+==================================================== */
+hr.inner { border-color: var(--border-subtle); margin: 0; }
+
+/* ====================================================
+   SEED BUTTON
+==================================================== */
+.seed-btn-wrap { display: flex; justify-content: flex-end; margin-bottom: 1.25rem; }
+#btn-seed {
+  font-size: 0.78rem; font-weight: 600; letter-spacing: .05em;
+  padding: 0.45rem 1.1rem; border-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,.12);
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; gap: 0.4rem;
+  transition: all var(--transition);
+}
+#btn-seed:hover { border-color: var(--cyan); color: var(--cyan); }
+
+/* ====================================================
+   FOOTER
+==================================================== */
+.page-footer {
+  text-align: center; padding: 1.5rem 0 0;
+  color: var(--text-dim); font-size: 0.72rem;
+}
+
+/* ====================================================
+   RESPONSIVE
+==================================================== */
+@media (max-width: 992px) {
+  .summary-bar { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .lane-col { margin-bottom: 1.25rem; }
+}
