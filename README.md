@@ -7,15 +7,36 @@ Sistem Pemantauan Lampu Lalu Lintas Cerdas (Adaptive Traffic Light) berbasis Int
 ## 📌 Alur Kerja Sistem (System Architecture)
 
 ```mermaid
-graph TD
-    A[ESP32-CAM / Kamera Jalur] -- Upload Gambar /upload/lane --> B[Flask Backend Server]
-    B -- Proses Deteksi Bounding Box --> C[YOLOv8 Model]
+flowchart TD
+    subgraph IoT_Input [Sensor / Edge]
+        A[ESP32-CAM / Kamera Jalur]
+    end
+
+    subgraph Backend [Server & Pemrosesan AI]
+        B(Flask Backend Server)
+        C{YOLOv8 Model}
+        D[(SQLite Database)]
+    end
+
+    subgraph Cloud [Sistem Real-Time]
+        E[(Firebase Realtime Database)]
+    end
+
+    subgraph Output [Hardware & Monitoring]
+        F[ESP8266 Controller]
+        G(((Lampu Lalu Lintas Fisik)))
+        H[\Web Dashboard / Frontend/]
+    end
+
+    %% Alur Data
+    A -- Upload Gambar /upload/lane --> B
+    B -- Proses Deteksi Bounding Box --> C
     C -- Hitung Kendaraan & Durasi Hijau --> B
-    B -- Simpan Data & Status --> D[(SQLite Database)]
-    B -- Sync Realtime Status --> E[Firebase Realtime Database]
-    E -- Baca Status Lampu /traffic_lights --> F[ESP8266 Traffic Light Controller]
-    F -- Kontrol Fisik LED --> G[Lampu Lalu Lintas Fisik]
-    E -. Sync Status & Countdown .-> H[Web Dashboard / Frontend]
+    B -- Simpan Data & Status --> D
+    B -- Sync Realtime Status --> E
+    E -- Baca Status Lampu /traffic_lights --> F
+    F -- Kontrol Fisik LED --> G
+    E -. Sync Status & Countdown .-> H
 ```
 
 1. **Pengambilan Gambar (ESP32-CAM):** Kamera ditempatkan pada setiap jalur (Jalur A, B, C) untuk mengambil gambar jalan secara berkala (misalnya tiap 10 detik) dan mengirimkannya ke Flask Backend via HTTP POST.
