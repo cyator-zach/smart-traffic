@@ -6,31 +6,25 @@
   <title>Smart Traffic Light Monitoring</title>
   <meta name="description" content="Dashboard monitoring lampu lalu lintas adaptif berbasis YOLOv8 dengan deteksi kendaraan realtime untuk 3 jalur." />
 
-  <!-- Bootstrap 5 -->
+  <!-- Vendor Stylesheets -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-  <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
 
-  <!-- Firebase SDK (v10 compat via CDN) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
   <!-- Prevent Theme Flash -->
-  <script>
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-  </script>
+  <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');</script>
 
-  <!-- External Custom Stylesheet -->
+  <!-- App Stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
 
-<!-- NAVBAR -->
+<!-- Navbar -->
 <header class="nav-bar">
   <div class="nav-brand">
     <i class="bi bi-traffic-light"></i>
@@ -48,7 +42,7 @@
   </div>
 </header>
 
-<!-- PAGE CONTENT -->
+<!-- Main Content -->
 <main class="page-wrap">
 
   <!-- Summary Bar -->
@@ -76,7 +70,7 @@
     </div>
   </div>
 
-  <!-- Seed Dummy Data + Firebase Test -->
+  <!-- Control Buttons -->
   <div class="seed-btn-wrap">
     <button id="btn-fb-test" class="btn-fb-test" onclick="testFirebase()">
       <i class="bi bi-wifi"></i> Test Firebase
@@ -86,38 +80,40 @@
     </button>
   </div>
 
-  <!-- 3 Lane Cards -->
+  <!-- Lane Cards -->
   <div class="row g-3" id="lanes-row">
 
-    <!-- ── JALUR A ── -->
-    <div class="col-lg-4 col-md-12 lane-col" id="col-a">
-      <div class="lane-card" id="card-a">
+    {% for lane in [('a','A'),('b','B'),('c','C')] %}
+    <div class="col-lg-4 col-md-12 lane-col" id="col-{{ lane[0] }}">
+      <div class="lane-card" id="card-{{ lane[0] }}">
+
         <div class="lane-header">
-          <div class="lane-icon a"><i class="bi bi-signpost-2-fill"></i></div>
+          <div class="lane-icon {{ lane[0] }}"><i class="bi bi-signpost-2-fill"></i></div>
           <div>
-            <div class="lane-title">Jalur A</div>
-            <div class="lane-subtitle">Lane A</div>
+            <div class="lane-title">Jalur {{ lane[1] }}</div>
+            <div class="lane-subtitle">Lane {{ lane[1] }}</div>
           </div>
-          <span class="density-badge" id="density-a">—</span>
+          <span class="density-badge" id="density-{{ lane[0] }}">—</span>
         </div>
+
         <div class="lane-body">
 
-          <!-- Traffic Light Widget -->
+          <!-- Traffic Light -->
           <div class="tl-widget">
             <div class="tl-lights">
-              <div class="tl-bulb red-bulb"    id="tl-red-a"></div>
-              <div class="tl-bulb yellow-bulb" id="tl-yellow-a"></div>
-              <div class="tl-bulb green-bulb"  id="tl-green-a"></div>
+              <div class="tl-bulb red-bulb"    id="tl-red-{{ lane[0] }}"></div>
+              <div class="tl-bulb yellow-bulb" id="tl-yellow-{{ lane[0] }}"></div>
+              <div class="tl-bulb green-bulb"  id="tl-green-{{ lane[0] }}"></div>
             </div>
             <div class="tl-info">
               <div class="tl-status-label">Status Lampu</div>
-              <div class="tl-status-text" id="status-a">—</div>
+              <div class="tl-status-text" id="status-{{ lane[0] }}">—</div>
               <div class="tl-green-dur">
-                Durasi hijau: <span id="gdur-a" class="green-dur-val">—</span>s
+                Durasi hijau: <span id="gdur-{{ lane[0] }}" class="green-dur-val">—</span>s
               </div>
             </div>
             <div class="countdown-wrap">
-              <div class="countdown-val" id="cd-a">--</div>
+              <div class="countdown-val" id="cd-{{ lane[0] }}">--</div>
               <div class="countdown-lbl">detik</div>
             </div>
           </div>
@@ -130,43 +126,43 @@
               <span class="stat-icon"><i class="fa-solid fa-car"></i></span>
               <div>
                 <div class="stat-label">Car</div>
-                <div class="stat-val" id="car-a">0</div>
+                <div class="stat-val" id="car-{{ lane[0] }}">0</div>
               </div>
             </div>
             <div class="stat-item item-moto">
               <span class="stat-icon"><i class="fa-solid fa-motorcycle"></i></span>
               <div>
                 <div class="stat-label">Motorcycle</div>
-                <div class="stat-val" id="moto-a">0</div>
+                <div class="stat-val" id="moto-{{ lane[0] }}">0</div>
               </div>
             </div>
             <div class="stat-item item-bus">
               <span class="stat-icon"><i class="fa-solid fa-bus"></i></span>
               <div>
                 <div class="stat-label">Bus</div>
-                <div class="stat-val" id="bus-a">0</div>
+                <div class="stat-val" id="bus-{{ lane[0] }}">0</div>
               </div>
             </div>
             <div class="stat-item item-truck">
               <span class="stat-icon"><i class="fa-solid fa-truck"></i></span>
               <div>
                 <div class="stat-label">Truck</div>
-                <div class="stat-val" id="truck-a">0</div>
+                <div class="stat-val" id="truck-{{ lane[0] }}">0</div>
               </div>
             </div>
           </div>
 
           <div class="total-row">
             <span class="total-label"><i class="bi bi-stack"></i> Total Kendaraan</span>
-            <span class="total-val" id="total-a">0</span>
+            <span class="total-val" id="total-{{ lane[0] }}">0</span>
           </div>
 
           <hr class="inner" />
 
-          <!-- YOLO Image Result -->
+          <!-- YOLO Detection Result -->
           <div class="img-section">
             <div class="img-label"><i class="bi bi-camera-video"></i> Hasil Deteksi YOLO</div>
-            <div id="yolo-wrap-a">
+            <div id="yolo-wrap-{{ lane[0] }}">
               <div class="img-placeholder">
                 <i class="bi bi-image-alt"></i>
                 <span>Belum ada gambar</span>
@@ -176,207 +172,26 @@
 
           <!-- Upload -->
           <div class="upload-section">
-            <div class="img-label"><i class="bi bi-upload"></i> Upload Gambar Jalur A</div>
-            <form id="form-a" onsubmit="uploadImage(event,'a')">
+            <div class="img-label"><i class="bi bi-upload"></i> Upload Gambar Jalur {{ lane[1] }}</div>
+            <form id="form-{{ lane[0] }}" onsubmit="uploadImage(event,'{{ lane[0] }}')">
               <div class="upload-form">
-                <input type="file" id="file-a" name="image" class="upload-input"
+                <input type="file" id="file-{{ lane[0] }}" name="image" class="upload-input"
                        accept=".jpg,.jpeg,.png,.bmp" required />
-                <button type="submit" id="btn-a" class="btn-upload a">
+                <button type="submit" id="btn-{{ lane[0] }}" class="btn-upload {{ lane[0] }}">
                   <i class="bi bi-cloud-upload"></i> Upload
                 </button>
               </div>
-              <div class="upload-progress" id="prog-a">
+              <div class="upload-progress" id="prog-{{ lane[0] }}">
                 <div class="upload-progress-bar"></div>
               </div>
-              <div class="upload-msg" id="msg-a"></div>
+              <div class="upload-msg" id="msg-{{ lane[0] }}"></div>
             </form>
           </div>
 
         </div>
       </div>
     </div>
-
-    <!-- ── JALUR B ── -->
-    <div class="col-lg-4 col-md-12 lane-col" id="col-b">
-      <div class="lane-card" id="card-b">
-        <div class="lane-header">
-          <div class="lane-icon b"><i class="bi bi-signpost-2-fill"></i></div>
-          <div>
-            <div class="lane-title">Jalur B</div>
-            <div class="lane-subtitle">Lane B</div>
-          </div>
-          <span class="density-badge" id="density-b">—</span>
-        </div>
-        <div class="lane-body">
-
-          <div class="tl-widget">
-            <div class="tl-lights">
-              <div class="tl-bulb red-bulb"    id="tl-red-b"></div>
-              <div class="tl-bulb yellow-bulb" id="tl-yellow-b"></div>
-              <div class="tl-bulb green-bulb"  id="tl-green-b"></div>
-            </div>
-            <div class="tl-info">
-              <div class="tl-status-label">Status Lampu</div>
-              <div class="tl-status-text" id="status-b">—</div>
-              <div class="tl-green-dur">
-                Durasi hijau: <span id="gdur-b" class="green-dur-val">—</span>s
-              </div>
-            </div>
-            <div class="countdown-wrap">
-              <div class="countdown-val" id="cd-b">--</div>
-              <div class="countdown-lbl">detik</div>
-            </div>
-          </div>
-
-          <hr class="inner" />
-
-          <div class="stats-grid">
-            <div class="stat-item item-car">
-              <span class="stat-icon"><i class="fa-solid fa-car"></i></span>
-              <div><div class="stat-label">Car</div><div class="stat-val" id="car-b">0</div></div>
-            </div>
-            <div class="stat-item item-moto">
-              <span class="stat-icon"><i class="fa-solid fa-motorcycle"></i></span>
-              <div><div class="stat-label">Motorcycle</div><div class="stat-val" id="moto-b">0</div></div>
-            </div>
-            <div class="stat-item item-bus">
-              <span class="stat-icon"><i class="fa-solid fa-bus"></i></span>
-              <div><div class="stat-label">Bus</div><div class="stat-val" id="bus-b">0</div></div>
-            </div>
-            <div class="stat-item item-truck">
-              <span class="stat-icon"><i class="fa-solid fa-truck"></i></span>
-              <div><div class="stat-label">Truck</div><div class="stat-val" id="truck-b">0</div></div>
-            </div>
-          </div>
-
-          <div class="total-row">
-            <span class="total-label"><i class="bi bi-stack"></i> Total Kendaraan</span>
-            <span class="total-val" id="total-b">0</span>
-          </div>
-
-          <hr class="inner" />
-
-          <div class="img-section">
-            <div class="img-label"><i class="bi bi-camera-video"></i> Hasil Deteksi YOLO</div>
-            <div id="yolo-wrap-b">
-              <div class="img-placeholder">
-                <i class="bi bi-image-alt"></i>
-                <span>Belum ada gambar</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="upload-section">
-            <div class="img-label"><i class="bi bi-upload"></i> Upload Gambar Jalur B</div>
-            <form id="form-b" onsubmit="uploadImage(event,'b')">
-              <div class="upload-form">
-                <input type="file" id="file-b" name="image" class="upload-input"
-                       accept=".jpg,.jpeg,.png,.bmp" required />
-                <button type="submit" id="btn-b" class="btn-upload b">
-                  <i class="bi bi-cloud-upload"></i> Upload
-                </button>
-              </div>
-              <div class="upload-progress" id="prog-b">
-                <div class="upload-progress-bar"></div>
-              </div>
-              <div class="upload-msg" id="msg-b"></div>
-            </form>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- ── JALUR C ── -->
-    <div class="col-lg-4 col-md-12 lane-col" id="col-c">
-      <div class="lane-card" id="card-c">
-        <div class="lane-header">
-          <div class="lane-icon c"><i class="bi bi-signpost-2-fill"></i></div>
-          <div>
-            <div class="lane-title">Jalur C</div>
-            <div class="lane-subtitle">Lane C</div>
-          </div>
-          <span class="density-badge" id="density-c">—</span>
-        </div>
-        <div class="lane-body">
-
-          <div class="tl-widget">
-            <div class="tl-lights">
-              <div class="tl-bulb red-bulb"    id="tl-red-c"></div>
-              <div class="tl-bulb yellow-bulb" id="tl-yellow-c"></div>
-              <div class="tl-bulb green-bulb"  id="tl-green-c"></div>
-            </div>
-            <div class="tl-info">
-              <div class="tl-status-label">Status Lampu</div>
-              <div class="tl-status-text" id="status-c">—</div>
-              <div class="tl-green-dur">
-                Durasi hijau: <span id="gdur-c" class="green-dur-val">—</span>s
-              </div>
-            </div>
-            <div class="countdown-wrap">
-              <div class="countdown-val" id="cd-c">--</div>
-              <div class="countdown-lbl">detik</div>
-            </div>
-          </div>
-
-          <hr class="inner" />
-
-          <div class="stats-grid">
-            <div class="stat-item item-car">
-              <span class="stat-icon"><i class="fa-solid fa-car"></i></span>
-              <div><div class="stat-label">Car</div><div class="stat-val" id="car-c">0</div></div>
-            </div>
-            <div class="stat-item item-moto">
-              <span class="stat-icon"><i class="fa-solid fa-motorcycle"></i></span>
-              <div><div class="stat-label">Motorcycle</div><div class="stat-val" id="moto-c">0</div></div>
-            </div>
-            <div class="stat-item item-bus">
-              <span class="stat-icon"><i class="fa-solid fa-bus"></i></span>
-              <div><div class="stat-label">Bus</div><div class="stat-val" id="bus-c">0</div></div>
-            </div>
-            <div class="stat-item item-truck">
-              <span class="stat-icon"><i class="fa-solid fa-truck"></i></span>
-              <div><div class="stat-label">Truck</div><div class="stat-val" id="truck-c">0</div></div>
-            </div>
-          </div>
-
-          <div class="total-row">
-            <span class="total-label"><i class="bi bi-stack"></i> Total Kendaraan</span>
-            <span class="total-val" id="total-c">0</span>
-          </div>
-
-          <hr class="inner" />
-
-          <div class="img-section">
-            <div class="img-label"><i class="bi bi-camera-video"></i> Hasil Deteksi YOLO</div>
-            <div id="yolo-wrap-c">
-              <div class="img-placeholder">
-                <i class="bi bi-image-alt"></i>
-                <span>Belum ada gambar</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="upload-section">
-            <div class="img-label"><i class="bi bi-upload"></i> Upload Gambar Jalur C</div>
-            <form id="form-c" onsubmit="uploadImage(event,'c')">
-              <div class="upload-form">
-                <input type="file" id="file-c" name="image" class="upload-input"
-                       accept=".jpg,.jpeg,.png,.bmp" required />
-                <button type="submit" id="btn-c" class="btn-upload c">
-                  <i class="bi bi-cloud-upload"></i> Upload
-                </button>
-              </div>
-              <div class="upload-progress" id="prog-c">
-                <div class="upload-progress-bar"></div>
-              </div>
-              <div class="upload-msg" id="msg-c"></div>
-            </form>
-          </div>
-
-        </div>
-      </div>
-    </div>
+    {% endfor %}
 
   </div>
 
@@ -388,10 +203,8 @@
 
 </main>
 
-<!-- External Custom Javascript -->
+<!-- Scripts -->
 <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
-
-<!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

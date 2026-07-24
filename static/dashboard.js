@@ -1,80 +1,64 @@
+/**
+ * Smart Traffic Light Monitoring — Dashboard Client
+ *
+ * Sections:
+ *   1. Firebase (init, push, test)
+ *   2. Clock
+ *   3. Traffic Light UI Helpers
+ *   4. Dashboard State & Rendering
+ *   5. Local Countdown Ticker
+ *   6. API Sync
+ *   7. Image Upload
+ *   8. Seed Dummy Data
+ *   9. Theme Toggle
+ */
+
+/* ============================================================
+   1. FIREBASE
+============================================================ */
 let db = null;
 let fbReady = false;
 const fbStatusEl = document.getElementById('fb-status');
 
 function setFbStatus(ok, msg) {
-  if (fbStatusEl) {
-    fbStatusEl.textContent = 'Firebase: ' + msg;
-    fbStatusEl.style.color = ok ? 'var(--green)' : 'var(--red)';
-  }
+  if (!fbStatusEl) return;
+  fbStatusEl.textContent = 'Firebase: ' + msg;
+  fbStatusEl.style.color = ok ? 'var(--green)' : 'var(--red)';
 }
 
 async function initFirebase() {
   try {
-    const res = await fetch("/api/firebase-config");
-    const firebaseConfig = await res.json();
+    const res = await fetch('/api/firebase-config');
+    const cfg = await res.json();
 
-    if (!firebaseConfig.apiKey) {
-      console.warn('[Firebase] Konfigurasi kosong, pastikan .env terkonfigurasi.');
-      setFbStatus(false, '⚠ Config .env belum diatur');
+    if (!cfg.apiKey) {
+      setFbStatus(false, 'Config .env belum diatur');
       return;
     }
 
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(cfg);
     db = firebase.database();
-    console.log('[Firebase] App initialized OK');
 
-    // Monitor koneksi
     db.ref('.info/connected').on('value', snap => {
       fbReady = snap.val() === true;
-      if (fbReady) {
-        setFbStatus(true, '✓ Terhubung');
-        console.log('[Firebase] Realtime DB: TERHUBUNG');
-      } else {
-        setFbStatus(false, '⚠ Menghubungkan…');
-        console.warn('[Firebase] Realtime DB: belum terhubung / terputus');
-      }
+      setFbStatus(fbReady, fbReady ? 'Terhubung' : 'Menghubungkan…');
     });
 
-    // Tulis test value saat load untuk verifikasi write permission
     setTimeout(() => {
       db.ref('_ping').set({ ts: Date.now(), from: 'dashboard' })
-        .then(() => console.log('[Firebase] ✓ Test write berhasil → DB aktif & rules OK'))
-        .catch(err => {
-          console.error('[Firebase] ✗ Test write GAGAL:', err.code, err.message);
-          setFbStatus(false, '✗ Write gagal: ' + err.code);
-          if (err.code === 'PERMISSION_DENIED') {
-            console.error('[Firebase] → Penyebab: Rules Firebase memblokir write.');
-            console.error('[Firebase] → Solusi: Buka Firebase Console → Realtime Database → Rules → ubah ke:');
-            console.error('[Firebase] →   { "rules": { ".read": true, ".write": true } }');
-          } else if (err.code === 'NETWORK_ERROR' || err.message.includes('failed to fetch')) {
-            console.error('[Firebase] → Penyebab: Database belum dibuat atau databaseURL salah.');
-            console.error('[Firebase] → Solusi: Buka Firebase Console → Realtime Database → Create Database');
-          }
-        });
+        .catch(err => setFbStatus(false, 'Write gagal: ' + err.code));
     }, 2000);
-  } catch(e) {
-    console.error('[Firebase] initializeApp GAGAL:', e.message);
-    setFbStatus(false, '✗ Gagal init');
+  } catch (e) {
+    setFbStatus(false, 'Gagal init');
   }
 }
 
-initFirebase();
-
-/**
- * Push status semua jalur ke Firebase Realtime Database.
- * Path: traffic_lights/lane_a | lane_b | lane_c
- */
 function pushToFirebase(data) {
-  if (!db) {
-    console.warn('[Firebase] db null, skip push.');
-    return;
-  }
+  if (!db) return;
   const updates = {};
   data.forEach(d => {
-    const key = `traffic_lights/lane_${d.lane}`;
-    updates[key] = {
-      light_status:   (d.light_status  || 'RED').toUpperCase(),
+    updates[`traffic_lights/lane_${d.lane}`] = {
+      light_status:   (d.light_status || 'RED').toUpperCase(),
       countdown:      d.countdown      || 0,
       total_vehicle:  d.total_vehicle  || 0,
       density:        d.density        || 'SEPI',
@@ -87,21 +71,15 @@ function pushToFirebase(data) {
     };
   });
   updates['last_sync'] = Date.now();
-
-  db.ref().update(updates)
-    .then(() => console.log('[Firebase] ✓ Data pushed:', Object.keys(updates)))
-    .catch(err => {
-      console.error('[Firebase] ✗ Push GAGAL:', err.code, '-', err.message);
-      setFbStatus(false, '✗ ' + err.code);
-    });
+  db.ref().update(updates).catch(err => setFbStatus(false, err.code));
 }
 
-/** Tombol manual test Firebase write */
 function testFirebase() {
   if (!db) {
     alert('Firebase tidak terinisialisasi. Cek konfigurasi .env atau console (F12).');
     return;
   }
+
   const btn = document.getElementById('btn-fb-test');
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Testing…';
   btn.disabled = true;
@@ -111,65 +89,64 @@ function testFirebase() {
       btn.innerHTML = '<i class="bi bi-check-circle"></i> Berhasil!';
       btn.style.borderColor = 'var(--green)';
       btn.style.color = 'var(--green)';
-      setFbStatus(true, '✓ Write OK');
-      console.log('[Firebase] Manual test write: BERHASIL ✓');
+      setFbStatus(true, 'Write OK');
     })
     .catch(err => {
       btn.innerHTML = '<i class="bi bi-x-circle"></i> ' + err.code;
       btn.style.borderColor = 'var(--red)';
       btn.style.color = 'var(--red)';
-      setFbStatus(false, '✗ ' + err.code);
-      console.error('[Firebase] Manual test write GAGAL:', err.code, err.message);
+      setFbStatus(false, err.code);
       if (err.code === 'PERMISSION_DENIED') {
         alert('PERMISSION_DENIED\n\nSolusi:\n1. Buka Firebase Console\n2. Realtime Database → Rules\n3. Ubah rules menjadi:\n{\n  "rules": {\n    ".read": true,\n    ".write": true\n  }\n}');
       } else {
-        alert('Error: ' + err.code + '\n' + err.message + '\n\nKemungkinan: Realtime Database belum dibuat di Firebase Console.');
+        alert('Error: ' + err.code + '\n' + err.message);
       }
     })
     .finally(() => {
       setTimeout(() => {
         btn.innerHTML = '<i class="bi bi-wifi"></i> Test Firebase';
         btn.disabled = false;
-        btn.style.borderColor = 'rgba(0,229,255,.3)';
-        btn.style.color = 'var(--cyan)';
+        btn.style.borderColor = '';
+        btn.style.color = '';
       }, 3000);
     });
 }
 
+initFirebase();
+
 /* ============================================================
-   CLOCK
+   2. CLOCK
 ============================================================ */
 function updateClock() {
-  const now = new Date();
   document.getElementById('clock').textContent =
-    now.toLocaleTimeString('id-ID', { hour12: false });
+    new Date().toLocaleTimeString('id-ID', { hour12: false });
 }
 updateClock();
 setInterval(updateClock, 1000);
 
 /* ============================================================
-   TRAFFIC LIGHT UI HELPERS
+   3. TRAFFIC LIGHT UI HELPERS
 ============================================================ */
+const LANES = ['a', 'b', 'c'];
+
 function setTrafficLight(lane, status) {
-  const red    = document.getElementById(`tl-red-${lane}`);
-  const yellow = document.getElementById(`tl-yellow-${lane}`);
-  const green  = document.getElementById(`tl-green-${lane}`);
-
-  red.className    = 'tl-bulb red-bulb';
-  yellow.className = 'tl-bulb yellow-bulb';
-  green.className  = 'tl-bulb green-bulb';
-
-  if (status === 'GREEN')  green.classList.add('green-on');
-  if (status === 'YELLOW') yellow.classList.add('yellow-on');
-  if (status === 'RED')    red.classList.add('red-on');
+  ['red', 'yellow', 'green'].forEach(color => {
+    const el = document.getElementById(`tl-${color}-${lane}`);
+    el.className = `tl-bulb ${color}-bulb`;
+  });
+  const activeMap = { GREEN: 'green-on', YELLOW: 'yellow-on', RED: 'red-on' };
+  const activeClass = activeMap[status];
+  if (activeClass) {
+    const color = status.toLowerCase();
+    document.getElementById(`tl-${color}-${lane}`).classList.add(activeClass);
+  }
 }
 
 function setCardGlow(lane, status) {
   const card = document.getElementById(`card-${lane}`);
   card.classList.remove('active-green', 'active-yellow', 'active-red');
-  if (status === 'GREEN')  card.classList.add('active-green');
-  if (status === 'YELLOW') card.classList.add('active-yellow');
-  if (status === 'RED')    card.classList.add('active-red');
+  const glowMap = { GREEN: 'active-green', YELLOW: 'active-yellow', RED: 'active-red' };
+  if (glowMap[status]) card.classList.add(glowMap[status]);
 }
 
 function setDensityBadge(lane, density) {
@@ -178,81 +155,69 @@ function setDensityBadge(lane, density) {
   el.className = `density-badge ${density || ''}`;
 }
 
+const STATUS_LABEL = { GREEN: 'HIJAU', YELLOW: 'KUNING', RED: 'MERAH' };
+
 /* ============================================================
-   UPDATE DASHBOARD FROM API DATA
+   4. DASHBOARD STATE & RENDERING
 ============================================================ */
-let laneState = {}; // local cache of each lane's state
+const laneState = {};
 
 function updateDashboard(data) {
   let totalAll = 0;
-  let activeLane = '—';
-  let activeCountdown = '--';
 
   data.forEach(d => {
     const lane = d.lane;
     const status = (d.light_status || 'RED').toUpperCase();
-    const countdown = d.countdown || 0;
 
-    // Cache state for local tick
     laneState[lane] = {
       status,
-      countdown,
-      laneName: d.lane_name || `Jalur ${lane.toUpperCase()}`,
-      car: d.car || 0,
-      motorcycle: d.motorcycle || 0,
-      bus: d.bus || 0,
-      truck: d.truck || 0,
-      total: d.total_vehicle || 0,
-      density: d.density,
-      greenDuration: d.green_duration || '—',
-      yoloImage: d.yolo_image
+      countdown:     d.countdown || 0,
+      laneName:      d.lane_name || `Jalur ${lane.toUpperCase()}`,
     };
 
-    // Update vehicle stats
     document.getElementById(`car-${lane}`).textContent   = d.car || 0;
     document.getElementById(`moto-${lane}`).textContent  = d.motorcycle || 0;
     document.getElementById(`bus-${lane}`).textContent   = d.bus || 0;
     document.getElementById(`truck-${lane}`).textContent = d.truck || 0;
     document.getElementById(`total-${lane}`).textContent = d.total_vehicle || 0;
+    document.getElementById(`gdur-${lane}`).textContent  = d.green_duration || '—';
 
     setDensityBadge(lane, d.density);
-    document.getElementById(`gdur-${lane}`).textContent = d.green_duration || '—';
-
-    // Update YOLO image (only on API sync)
-    const yoloWrap = document.getElementById(`yolo-wrap-${lane}`);
-    if (d.yolo_image) {
-      const existing = yoloWrap.querySelector('img');
-      if (!existing || !existing.src.includes(d.yolo_image.split('?')[0])) {
-        yoloWrap.innerHTML = `<img src="${d.yolo_image}" class="img-box"
-          alt="YOLO ${lane.toUpperCase()}"
-          onerror="this.parentElement.innerHTML='<div class=\\'img-placeholder\\'><i class=\\'bi bi-image-alt\\'></i><span>Gambar belum tersedia</span></div>'" />`;
-      }
-    }
+    updateYoloImage(lane, d.yolo_image);
 
     totalAll += (d.total_vehicle || 0);
   });
 
   document.getElementById('sum-total').textContent = totalAll;
-
-  // Update traffic lights and summary from cached state
   renderLiveState();
 }
 
-/** Render traffic lights, countdowns, and summary from local state */
+function updateYoloImage(lane, imageUrl) {
+  if (!imageUrl) return;
+  const wrap = document.getElementById(`yolo-wrap-${lane}`);
+  const existing = wrap.querySelector('img');
+  const basePath = imageUrl.split('?')[0];
+  if (existing && existing.src.includes(basePath)) return;
+
+  wrap.innerHTML = `<img src="${imageUrl}" class="img-box"
+    alt="YOLO ${lane.toUpperCase()}"
+    onerror="this.parentElement.innerHTML='<div class=\\'img-placeholder\\'><i class=\\'bi bi-image-alt\\'></i><span>Gambar belum tersedia</span></div>'" />`;
+}
+
 function renderLiveState() {
   let activeLane = '—';
   let activeCountdown = '--';
 
-  ['a', 'b', 'c'].forEach(lane => {
+  LANES.forEach(lane => {
     const s = laneState[lane];
     if (!s) return;
 
     const statusEl = document.getElementById(`status-${lane}`);
-    statusEl.textContent = s.status === 'GREEN' ? 'HIJAU' : s.status === 'YELLOW' ? 'KUNING' : 'MERAH';
+    statusEl.textContent = STATUS_LABEL[s.status] || 'MERAH';
     statusEl.className = `tl-status-text ${s.status}`;
 
     const cdEl = document.getElementById(`cd-${lane}`);
-    cdEl.textContent = (s.status !== 'RED') ? s.countdown : '--';
+    cdEl.textContent = s.status !== 'RED' ? s.countdown : '--';
     cdEl.className = `countdown-val ${s.status}`;
 
     setTrafficLight(lane, s.status);
@@ -269,11 +234,11 @@ function renderLiveState() {
 }
 
 /* ============================================================
-   LOCAL COUNTDOWN TICKER (every 1 second — smooth flow)
+   5. LOCAL COUNTDOWN TICKER
 ============================================================ */
-function tickCountdown() {
+setInterval(() => {
   let changed = false;
-  ['a', 'b', 'c'].forEach(lane => {
+  LANES.forEach(lane => {
     const s = laneState[lane];
     if (!s) return;
     if ((s.status === 'GREEN' || s.status === 'YELLOW') && s.countdown > 0) {
@@ -282,16 +247,14 @@ function tickCountdown() {
     }
   });
   if (changed) renderLiveState();
-}
-
-setInterval(tickCountdown, 1000);
+}, 1000);
 
 /* ============================================================
-   API SYNC (every 5 seconds, silent background refresh)
+   6. API SYNC
 ============================================================ */
 async function fetchData() {
   try {
-    const res  = await fetch('/api/data');
+    const res = await fetch('/api/data');
     const data = await res.json();
     if (Array.isArray(data)) {
       updateDashboard(data);
@@ -306,7 +269,7 @@ fetchData();
 setInterval(fetchData, 5000);
 
 /* ============================================================
-   UPLOAD IMAGE
+   7. IMAGE UPLOAD
 ============================================================ */
 async function uploadImage(event, lane) {
   event.preventDefault();
@@ -331,21 +294,21 @@ async function uploadImage(event, lane) {
 
   try {
     progBar.style.width = '70%';
-    const res  = await fetch(`/upload/${lane}`, { method: 'POST', body: formData });
+    const res = await fetch(`/upload/${lane}`, { method: 'POST', body: formData });
     const data = await res.json();
     progBar.style.width = '100%';
 
     if (data.success) {
-      msg.className   = 'upload-msg success';
+      msg.className = 'upload-msg success';
       msg.textContent = `✓ Jalur ${lane.toUpperCase()}: ${data.total_vehicle} kendaraan terdeteksi (${data.density})`;
       fileInput.value = '';
       setTimeout(fetchData, 300);
     } else {
-      msg.className   = 'upload-msg error';
+      msg.className = 'upload-msg error';
       msg.textContent = '✗ Error: ' + (data.error || 'Upload gagal');
     }
   } catch (e) {
-    msg.className   = 'upload-msg error';
+    msg.className = 'upload-msg error';
     msg.textContent = '✗ Koneksi error. Pastikan server berjalan.';
   } finally {
     btn.disabled = false;
@@ -355,20 +318,24 @@ async function uploadImage(event, lane) {
 }
 
 /* ============================================================
-   SEED DUMMY DATA
+   8. SEED DUMMY DATA
 ============================================================ */
 async function seedDummy() {
   const btn = document.getElementById('btn-seed');
   btn.disabled = true;
   btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Mengisi…';
+
   try {
-    const res  = await fetch('/api/seed', { method: 'POST' });
+    const res = await fetch('/api/seed', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
       btn.innerHTML = '<i class="bi bi-check-circle"></i> Berhasil!';
       setTimeout(fetchData, 300);
     }
-  } catch (e) { console.warn(e); }
+  } catch (e) {
+    console.warn(e);
+  }
+
   setTimeout(() => {
     btn.disabled = false;
     btn.innerHTML = '<i class="bi bi-database-fill-gear"></i> Isi Data Dummy';
@@ -376,32 +343,20 @@ async function seedDummy() {
 }
 
 /* ============================================================
-   THEME TOGGLER
-   ============================================================ */
+   9. THEME TOGGLE
+============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
-  const toggleBtn = document.getElementById('theme-toggle');
-  
-  function updateToggleIcon(theme) {
-    if (!toggleBtn) return;
-    const icon = toggleBtn.querySelector('i');
-    if (!icon) return;
-    if (theme === 'light') {
-      icon.className = 'fa-solid fa-sun';
-    } else {
-      icon.className = 'fa-solid fa-moon';
-    }
-  }
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
 
-  // Initial icon setup
+  const icon = btn.querySelector('i');
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-  updateToggleIcon(currentTheme);
+  icon.className = currentTheme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
 
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      const activeTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', activeTheme);
-      localStorage.setItem('theme', activeTheme);
-      updateToggleIcon(activeTheme);
-    });
-  }
+  btn.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    icon.className = next === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  });
 });
