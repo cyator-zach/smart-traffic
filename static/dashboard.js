@@ -181,6 +181,8 @@ function setDensityBadge(lane, density) {
 /* ============================================================
    UPDATE DASHBOARD FROM API DATA
 ============================================================ */
+let laneState = {}; // local cache of each lane's state
+
 function updateDashboard(data) {
   let totalAll = 0;
   let activeLane = '—';
@@ -188,50 +190,104 @@ function updateDashboard(data) {
 
   data.forEach(d => {
     const lane = d.lane;
+    const status = (d.light_status || 'RED').toUpperCase();
+    const countdown = d.countdown || 0;
 
-    document.getElementById(`car-${lane}`).textContent   = d.car   || 0;
+    // Cache state for local tick
+    laneState[lane] = {
+      status,
+      countdown,
+      laneName: d.lane_name || `Jalur ${lane.toUpperCase()}`,
+      car: d.car || 0,
+      motorcycle: d.motorcycle || 0,
+      bus: d.bus || 0,
+      truck: d.truck || 0,
+      total: d.total_vehicle || 0,
+      density: d.density,
+      greenDuration: d.green_duration || '—',
+      yoloImage: d.yolo_image
+    };
+
+    // Update vehicle stats
+    document.getElementById(`car-${lane}`).textContent   = d.car || 0;
     document.getElementById(`moto-${lane}`).textContent  = d.motorcycle || 0;
-    document.getElementById(`bus-${lane}`).textContent   = d.bus   || 0;
+    document.getElementById(`bus-${lane}`).textContent   = d.bus || 0;
     document.getElementById(`truck-${lane}`).textContent = d.truck || 0;
     document.getElementById(`total-${lane}`).textContent = d.total_vehicle || 0;
 
     setDensityBadge(lane, d.density);
-
-    const status = (d.light_status || 'RED').toUpperCase();
-    const statusEl = document.getElementById(`status-${lane}`);
-    statusEl.textContent = status === 'GREEN' ? 'HIJAU' : status === 'YELLOW' ? 'KUNING' : 'MERAH';
-    statusEl.className = `tl-status-text ${status}`;
-
-    const cdEl = document.getElementById(`cd-${lane}`);
-    cdEl.textContent = (status !== 'RED') ? (d.countdown || 0) : '--';
-    cdEl.className = `countdown-val ${status}`;
-
     document.getElementById(`gdur-${lane}`).textContent = d.green_duration || '—';
 
-    setTrafficLight(lane, status);
-    setCardGlow(lane, status);
-
+    // Update YOLO image (only on API sync)
     const yoloWrap = document.getElementById(`yolo-wrap-${lane}`);
     if (d.yolo_image) {
-      yoloWrap.innerHTML = `<img src="${d.yolo_image}" class="img-box"
-        alt="YOLO ${lane.toUpperCase()}"
-        onerror="this.parentElement.innerHTML='<div class=\\'img-placeholder\\'><i class=\\'bi bi-image-alt\\'></i><span>Gambar belum tersedia</span></div>'" />`;
+      const existing = yoloWrap.querySelector('img');
+      if (!existing || !existing.src.includes(d.yolo_image.split('?')[0])) {
+        yoloWrap.innerHTML = `<img src="${d.yolo_image}" class="img-box"
+          alt="YOLO ${lane.toUpperCase()}"
+          onerror="this.parentElement.innerHTML='<div class=\\'img-placeholder\\'><i class=\\'bi bi-image-alt\\'></i><span>Gambar belum tersedia</span></div>'" />`;
+      }
     }
 
     totalAll += (d.total_vehicle || 0);
-    if (status === 'GREEN' || status === 'YELLOW') {
-      activeLane = d.lane_name || `Jalur ${lane.toUpperCase()}`;
-      activeCountdown = (d.countdown || 0) + ' dtk';
+  });
+
+  document.getElementById('sum-total').textContent = totalAll;
+
+  // Update traffic lights and summary from cached state
+  renderLiveState();
+}
+
+/** Render traffic lights, countdowns, and summary from local state */
+function renderLiveState() {
+  let activeLane = '—';
+  let activeCountdown = '--';
+
+  ['a', 'b', 'c'].forEach(lane => {
+    const s = laneState[lane];
+    if (!s) return;
+
+    const statusEl = document.getElementById(`status-${lane}`);
+    statusEl.textContent = s.status === 'GREEN' ? 'HIJAU' : s.status === 'YELLOW' ? 'KUNING' : 'MERAH';
+    statusEl.className = `tl-status-text ${s.status}`;
+
+    const cdEl = document.getElementById(`cd-${lane}`);
+    cdEl.textContent = (s.status !== 'RED') ? s.countdown : '--';
+    cdEl.className = `countdown-val ${s.status}`;
+
+    setTrafficLight(lane, s.status);
+    setCardGlow(lane, s.status);
+
+    if (s.status === 'GREEN' || s.status === 'YELLOW') {
+      activeLane = s.laneName;
+      activeCountdown = s.countdown + ' dtk';
     }
   });
 
-  document.getElementById('sum-total').textContent    = totalAll;
   document.getElementById('sum-active-lane').textContent = activeLane;
-  document.getElementById('sum-countdown').textContent   = activeCountdown;
+  document.getElementById('sum-countdown').textContent = activeCountdown;
 }
 
 /* ============================================================
-   POLLING API /api/data SETIAP 3 DETIK + PUSH KE FIREBASE
+   LOCAL COUNTDOWN TICKER (every 1 second — smooth flow)
+============================================================ */
+function tickCountdown() {
+  let changed = false;
+  ['a', 'b', 'c'].forEach(lane => {
+    const s = laneState[lane];
+    if (!s) return;
+    if ((s.status === 'GREEN' || s.status === 'YELLOW') && s.countdown > 0) {
+      s.countdown--;
+      changed = true;
+    }
+  });
+  if (changed) renderLiveState();
+}
+
+setInterval(tickCountdown, 1000);
+
+/* ============================================================
+   API SYNC (every 5 seconds, silent background refresh)
 ============================================================ */
 async function fetchData() {
   try {
@@ -242,12 +298,12 @@ async function fetchData() {
       pushToFirebase(data);
     }
   } catch (e) {
-    console.warn('[POLL] Gagal fetch /api/data:', e);
+    console.warn('[SYNC] Gagal fetch /api/data:', e);
   }
 }
 
 fetchData();
-setInterval(fetchData, 3000);
+setInterval(fetchData, 5000);
 
 /* ============================================================
    UPLOAD IMAGE
