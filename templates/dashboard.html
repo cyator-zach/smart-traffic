@@ -10,12 +10,20 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
 
   <!-- Firebase SDK (v10 compat via CDN) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+  <!-- Prevent Theme Flash -->
+  <script>
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
 
   <!-- External Custom Stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
@@ -29,9 +37,14 @@
     Smart Traffic Monitor
   </div>
   <span class="nav-badge">YOLOv8n</span>
-  <div class="nav-time">
-    <span id="live-dot"></span>
-    <span id="clock">--:--:--</span>
+  <div class="nav-actions">
+    <button id="theme-toggle" class="nav-theme-btn" title="Toggle Theme">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+    <div class="nav-time">
+      <span id="live-dot"></span>
+      <span id="clock">--:--:--</span>
+    </div>
   </div>
 </header>
 
@@ -50,14 +63,14 @@
     <div class="summary-item">
       <div class="summary-icon green"><i class="bi bi-circle-fill"></i></div>
       <div class="summary-meta">
-        <div class="summary-val" id="sum-active-lane" style="color:var(--green)">—</div>
+        <div class="summary-val text-green" id="sum-active-lane">—</div>
         <div class="summary-lbl">Jalur Aktif (Hijau)</div>
       </div>
     </div>
     <div class="summary-item">
       <div class="summary-icon active"><i class="bi bi-clock-fill"></i></div>
       <div class="summary-meta">
-        <div class="summary-val" id="sum-countdown" style="color:var(--cyan)">--</div>
+        <div class="summary-val text-cyan" id="sum-countdown">--</div>
         <div class="summary-lbl">Sisa Waktu Jalur Aktif</div>
       </div>
     </div>
@@ -65,7 +78,7 @@
 
   <!-- Seed Dummy Data + Firebase Test -->
   <div class="seed-btn-wrap">
-    <button id="btn-fb-test" onclick="testFirebase()" style="font-size:0.78rem;font-weight:600;letter-spacing:.05em;padding:0.45rem 1.1rem;border-radius:var(--radius-sm);border:1px solid rgba(0,229,255,.3);background:transparent;color:var(--cyan);cursor:pointer;display:flex;align-items:center;gap:0.4rem;transition:all var(--transition);margin-right:.5rem">
+    <button id="btn-fb-test" class="btn-fb-test" onclick="testFirebase()">
       <i class="bi bi-wifi"></i> Test Firebase
     </button>
     <button id="btn-seed" onclick="seedDummy()">
@@ -83,7 +96,7 @@
           <div class="lane-icon a"><i class="bi bi-signpost-2-fill"></i></div>
           <div>
             <div class="lane-title">Jalur A</div>
-            <div style="font-size:.68rem;color:var(--text-muted)">Lane A</div>
+            <div class="lane-subtitle">Lane A</div>
           </div>
           <span class="density-badge" id="density-a">—</span>
         </div>
@@ -99,8 +112,8 @@
             <div class="tl-info">
               <div class="tl-status-label">Status Lampu</div>
               <div class="tl-status-text" id="status-a">—</div>
-              <div style="margin-top:4px;font-size:.68rem;color:var(--text-muted)">
-                Durasi hijau: <span id="gdur-a" style="color:var(--green);font-weight:700">—</span>s
+              <div class="tl-green-dur">
+                Durasi hijau: <span id="gdur-a" class="green-dur-val">—</span>s
               </div>
             </div>
             <div class="countdown-wrap">
@@ -113,29 +126,29 @@
 
           <!-- Vehicle Stats -->
           <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-icon">🚗</span>
+            <div class="stat-item item-car">
+              <span class="stat-icon"><i class="fa-solid fa-car"></i></span>
               <div>
                 <div class="stat-label">Car</div>
                 <div class="stat-val" id="car-a">0</div>
               </div>
             </div>
-            <div class="stat-item">
-              <span class="stat-icon">🏍️</span>
+            <div class="stat-item item-moto">
+              <span class="stat-icon"><i class="fa-solid fa-motorcycle"></i></span>
               <div>
                 <div class="stat-label">Motorcycle</div>
                 <div class="stat-val" id="moto-a">0</div>
               </div>
             </div>
-            <div class="stat-item">
-              <span class="stat-icon">🚌</span>
+            <div class="stat-item item-bus">
+              <span class="stat-icon"><i class="fa-solid fa-bus"></i></span>
               <div>
                 <div class="stat-label">Bus</div>
                 <div class="stat-val" id="bus-a">0</div>
               </div>
             </div>
-            <div class="stat-item">
-              <span class="stat-icon">🚚</span>
+            <div class="stat-item item-truck">
+              <span class="stat-icon"><i class="fa-solid fa-truck"></i></span>
               <div>
                 <div class="stat-label">Truck</div>
                 <div class="stat-val" id="truck-a">0</div>
@@ -190,7 +203,7 @@
           <div class="lane-icon b"><i class="bi bi-signpost-2-fill"></i></div>
           <div>
             <div class="lane-title">Jalur B</div>
-            <div style="font-size:.68rem;color:var(--text-muted)">Lane B</div>
+            <div class="lane-subtitle">Lane B</div>
           </div>
           <span class="density-badge" id="density-b">—</span>
         </div>
@@ -205,8 +218,8 @@
             <div class="tl-info">
               <div class="tl-status-label">Status Lampu</div>
               <div class="tl-status-text" id="status-b">—</div>
-              <div style="margin-top:4px;font-size:.68rem;color:var(--text-muted)">
-                Durasi hijau: <span id="gdur-b" style="color:var(--green);font-weight:700">—</span>s
+              <div class="tl-green-dur">
+                Durasi hijau: <span id="gdur-b" class="green-dur-val">—</span>s
               </div>
             </div>
             <div class="countdown-wrap">
@@ -218,20 +231,20 @@
           <hr class="inner" />
 
           <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-icon">🚗</span>
+            <div class="stat-item item-car">
+              <span class="stat-icon"><i class="fa-solid fa-car"></i></span>
               <div><div class="stat-label">Car</div><div class="stat-val" id="car-b">0</div></div>
             </div>
-            <div class="stat-item">
-              <span class="stat-icon">🏍️</span>
+            <div class="stat-item item-moto">
+              <span class="stat-icon"><i class="fa-solid fa-motorcycle"></i></span>
               <div><div class="stat-label">Motorcycle</div><div class="stat-val" id="moto-b">0</div></div>
             </div>
-            <div class="stat-item">
-              <span class="stat-icon">🚌</span>
+            <div class="stat-item item-bus">
+              <span class="stat-icon"><i class="fa-solid fa-bus"></i></span>
               <div><div class="stat-label">Bus</div><div class="stat-val" id="bus-b">0</div></div>
             </div>
-            <div class="stat-item">
-              <span class="stat-icon">🚚</span>
+            <div class="stat-item item-truck">
+              <span class="stat-icon"><i class="fa-solid fa-truck"></i></span>
               <div><div class="stat-label">Truck</div><div class="stat-val" id="truck-b">0</div></div>
             </div>
           </div>
@@ -281,7 +294,7 @@
           <div class="lane-icon c"><i class="bi bi-signpost-2-fill"></i></div>
           <div>
             <div class="lane-title">Jalur C</div>
-            <div style="font-size:.68rem;color:var(--text-muted)">Lane C</div>
+            <div class="lane-subtitle">Lane C</div>
           </div>
           <span class="density-badge" id="density-c">—</span>
         </div>
@@ -296,8 +309,8 @@
             <div class="tl-info">
               <div class="tl-status-label">Status Lampu</div>
               <div class="tl-status-text" id="status-c">—</div>
-              <div style="margin-top:4px;font-size:.68rem;color:var(--text-muted)">
-                Durasi hijau: <span id="gdur-c" style="color:var(--green);font-weight:700">—</span>s
+              <div class="tl-green-dur">
+                Durasi hijau: <span id="gdur-c" class="green-dur-val">—</span>s
               </div>
             </div>
             <div class="countdown-wrap">
@@ -309,20 +322,20 @@
           <hr class="inner" />
 
           <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-icon">🚗</span>
+            <div class="stat-item item-car">
+              <span class="stat-icon"><i class="fa-solid fa-car"></i></span>
               <div><div class="stat-label">Car</div><div class="stat-val" id="car-c">0</div></div>
             </div>
-            <div class="stat-item">
-              <span class="stat-icon">🏍️</span>
+            <div class="stat-item item-moto">
+              <span class="stat-icon"><i class="fa-solid fa-motorcycle"></i></span>
               <div><div class="stat-label">Motorcycle</div><div class="stat-val" id="moto-c">0</div></div>
             </div>
-            <div class="stat-item">
-              <span class="stat-icon">🚌</span>
+            <div class="stat-item item-bus">
+              <span class="stat-icon"><i class="fa-solid fa-bus"></i></span>
               <div><div class="stat-label">Bus</div><div class="stat-val" id="bus-c">0</div></div>
             </div>
-            <div class="stat-item">
-              <span class="stat-icon">🚚</span>
+            <div class="stat-item item-truck">
+              <span class="stat-icon"><i class="fa-solid fa-truck"></i></span>
               <div><div class="stat-label">Truck</div><div class="stat-val" id="truck-c">0</div></div>
             </div>
           </div>
@@ -370,7 +383,7 @@
   <footer class="page-footer">
     Smart Traffic Light Monitoring &copy; 2025 &mdash; YOLOv8n + Flask + SQLite + Firebase &mdash;
     Refresh setiap <strong>3 detik</strong>
-    &nbsp;|&nbsp; <span id="fb-status" style="color:var(--text-dim)">Firebase: menghubungkan…</span>
+    &nbsp;|&nbsp; <span id="fb-status">Firebase: menghubungkan…</span>
   </footer>
 
 </main>

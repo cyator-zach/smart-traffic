@@ -318,3 +318,34 @@ async function seedDummy() {
     btn.innerHTML = '<i class="bi bi-database-fill-gear"></i> Isi Data Dummy';
   }, 2500);
 }
+
+/* ============================================================
+   THEME TOGGLER
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  const toggleBtn = document.getElementById('theme-toggle');
+  
+  function updateToggleIcon(theme) {
+    if (!toggleBtn) return;
+    const icon = toggleBtn.querySelector('i');
+    if (!icon) return;
+    if (theme === 'light') {
+      icon.className = 'fa-solid fa-sun';
+    } else {
+      icon.className = 'fa-solid fa-moon';
+    }
+  }
+
+  // Initial icon setup
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+  updateToggleIcon(currentTheme);
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const activeTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', activeTheme);
+      localStorage.setItem('theme', activeTheme);
+      updateToggleIcon(activeTheme);
+    });
+  }
+});
